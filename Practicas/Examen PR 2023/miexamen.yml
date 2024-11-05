@@ -1,0 +1,81 @@
+---
+- name: Configurar servidores Apache en Host3 y Host4
+  hosts: aws
+  become: yes
+  vars:
+    nombre_alumno: "Paloma Pérez de Madrid Laguna"
+    apache_conf_dir: "{{ apache_conf_dirs[ansible_os_family] }}" # Directorio config apache (según distrib)
+    servicio_apache: "{{ apache_servicios[ansible_os_family] }}" # Nombre del servicio (según distrib)
+    apache_conf_file: "{{ apache_conf_files[ansible_os_family] }}" # Archivo principal de config (según distrib)
+    proyecto_dir: "{{ proyecto_dir_index[ansible_os_family] }}" # Directorio base del proyecto
+
+  vars_files:
+    - hosts_vars/miexamen_vars.yml
+
+  tasks:
+    - name: Instalar servidor Apache
+      package:
+        name: "{{ servicio_apache }}"
+        state: present
+
+    
+    - name: Habilitar servicio Apache
+      service:
+        name: "{{ servicio_apache }}"
+        enabled: yes
+        state: started
+
+    - name: Crear directorio de proyecto si no existe
+      file:
+        path: "{{ proyecto_dir }}"
+        state: directory
+      become: yes
+
+    - name: Crear default.html
+      template:
+        src: templates/default.html.j2
+        dest: "{{ proyecto_dir }}/default.html"
+
+    - name: Configurar el archivo de configuración de Apache en Red Hat
+      lineinfile:
+        path: "{{ apache_conf_dir }}/{{ apache_conf_file }}"
+        line: "DirectoryIndex default.html"
+        insertbefore: BOF
+      when: ansible_os_family == "RedHat"
+      notify: Reiniciar servicio Apache
+
+    - name: Configurar el archivo de configuración de Apache en Ubuntu
+      replace:
+        path: /etc/apache2/sites-available/000-default.conf
+        regexp: "(<VirtualHost \\*:80>)"
+        replace: |
+          \1
+            DirectoryIndex default.html
+      when: ansible_os_family == "Debian"
+      notify: Restart Apache
+
+    - name: Crear directorio del proyecto
+      file:
+        path: "{{ proyecto_dir }}/examen"
+        state: directory
+        owner: ansible
+        group: ansible
+        mode: '0755'
+
+    - name: Habilitar el procesamiento de archivos .htaccess en el directorio /var/www/html/examen
+      blockinfile:
+        path: "{{ apache_conf_dir }}/{{ apache_conf_file }}"
+        marker: "# {mark} ANSIBLE MANAGED BLOCK"
+        block: |
+          <Directory {{ proyecto_dir }}/examen>
+              AllowOverride All
+          </Directory>
+
+      notify: Reiniciar servicio Apache
+
+  handlers:
+    - name: Reiniciar servicio Apache
+      service:
+        name: "{{ servicio_apache }}"
+        state: restarted
+

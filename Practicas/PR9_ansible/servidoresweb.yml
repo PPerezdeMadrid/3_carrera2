@@ -1,0 +1,73 @@
+---
+- name: Configurar servidores web
+  hosts: WebServers 
+  become: yes # Permisos de superusuario
+  vars:
+    apache_conf_dir: "{{ apache_conf_dirs[ansible_os_family] }}" # Directorio config apache (según distrib)
+    servicio_apache: "{{ apache_servicios[ansible_os_family] }}" # Nombre del servicio (según distrib)
+    apache_conf_file: "{{ apache_conf_files[ansible_os_family] }}" # Archivo principal de config (según distrib)
+    proyecto_dir: "{{ proyecto_dir_index[ansible_os_family] }}" # Directorio base del proyecto
+    dominio: ""
+  vars_files:
+    - hosts_vars/apache_vars.yml
+  tasks:
+    - name: Instalar Apache
+      package:
+        name: "{{ servicio_apache }}"
+        state: present
+      notify:
+        - Reiniciar Apache
+
+    - name: Habilitar Apache
+      service:
+        name: "{{ servicio_apache }}"
+        enabled: yes
+        state: started
+      notify:
+        - Apache habilitado
+
+    - name: Deshabilitar sitio por defecto en Apache
+      command: a2dissite 000-default.conf
+      when: ansible_os_family in ['Debian', 'Ubuntu']
+
+    - name: Crear directorio del proyecto
+      file:
+        path: "{{ proyecto_dir }}/{{ dominio }}"
+        state: directory
+        owner: ansible
+        group: ansible
+        mode: '0755'
+      notify:
+        - Directorio del proyecto
+
+    - name: Crear página de inicio
+      copy:
+        dest: "{{ proyecto_dir }}/{{ dominio }}/index.html"
+        content: "Página de inicio del dominio {{ dominio }}"
+        owner: ansible
+        group: ansible
+        mode: '0644'
+      notify:
+        - Página de Inicio creada
+
+    - name: Configurar servidor virtual
+      template:
+        src: templates/vhost.conf.j2
+        dest: "{{ apache_conf_dir }}/{{ dominio }}.conf"
+      notify:
+        - Reiniciar Apache
+
+  handlers:
+    - name: Reiniciar Apache
+      service:
+        name: "{{ servicio_apache }}"
+        state: restarted
+    - name: Apache habilitado
+      debug:
+        msg: "Apache habilitado (enabled)"
+    - name: Directorio del proyecto
+      debug:
+        msg: "El directorio del proyecto se ha creado"
+    - name: Página de Inicio creada
+      debug: 
+        msg: "La página de inicio ha sido creada correctamente."

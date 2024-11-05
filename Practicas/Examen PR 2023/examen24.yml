@@ -1,0 +1,51 @@
+---
+- name: Configurar Bind y zonas DNS
+  hosts: examen
+  become: yes
+  vars:
+    dominio: ""
+
+  tasks:
+    - name: Instalar Bind
+      package:
+        name: bind9
+        state: present
+
+    - name: Asegurarse de que Bind9 esté habilitado y ejecutándose
+      systemd:
+        name: bind9
+        enabled: yes
+        state: started
+
+    - name: Modificar configuración en named.conf.options
+      blockinfile:
+        path: /etc/bind/named.conf.options
+        marker: "# {mark} ANSIBLE MANAGED BLOCK"
+        block: |
+              listen-on port 53 { any; };
+              recursion no;
+        insertafter: "listen-on-v6 { any; };"
+      notify: Reiniciar Bind9
+
+    - name: Generar archivo de zona
+      template:
+        src: templates/zona_template.j2
+        dest: "/etc/bind/db.{{ dominio }}"
+      
+    - name: Configurar named.conf en Maestro
+      blockinfile:
+        path: /etc/named.conf
+        marker: "# {mark} ZONA DOMINIO "
+        block: |
+          zone "{{ dominio }}" {
+            type master;
+            file "/var/bind/db.{{ dominio }}"; };
+          };
+        notify: Reiniciar Bind9
+
+  handlers:
+    - name: Reiniciar Bind9
+      systemd:
+        name: bind9
+        state: restarted
+

@@ -1,0 +1,12 @@
+etc/
+├── ansible/
+    ├── group_vars/
+    │   └── WebServers
+    ├── hosts
+    ├── roles/
+    ├── ansible.cfg/
+    ├── templates/
+    │   └── vhost.conf.j2
+    ├── hosts_vars/
+    │   └── apache_vars.yml
+    └servidoresweb.yml

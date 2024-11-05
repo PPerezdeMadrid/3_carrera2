@@ -1,0 +1,14 @@
+---
+- name: Configurar Bind y zonas DNS
+  hosts: Servidores_DNS
+  become: yes
+  vars:
+    ip_maestro: "{{ hostvars[groups['DNS_Maestro'][0]]['ansible_host'] }}"
+    ip_esclavo: "{{ hostvars[groups['DNS_Esclavo'][0]]['ansible_host'] }}"
+    zona_dns: ""
+
+  tasks:
+    - name: Instalar Bind
+      package:
+        name: bind
+        state: present

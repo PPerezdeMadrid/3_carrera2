@@ -1,0 +1,74 @@
+---
+- name: Configurar Bind y zonas DNS
+  hosts: Servidores_DNS
+  become: yes
+  vars:
+    ip_maestro: "{{ hostvars[groups['DNS_Maestro'][0]]['ansible_host'] }}"
+    ip_esclavo: "{{ hostvars[groups['DNS_Esclavo'][0]]['ansible_host'] }}"
+    zona_dns: ""
+
+  tasks:
+    - name: Instalar Bind
+      package:
+        name: bind
+        state: present
+
+    - name: Modificar listen-on en named.conf.options
+      replace:
+        path: /etc/named.conf
+        regexp: '^(\s*)listen-on port 53 {[^}]*};' #Comillas simples no dobles
+        replace: '\1listen-on port 53 { any; };'
+
+    - name: Modificar allow-query en named.conf.options
+      replace:
+        path: /etc/named.conf
+        regexp: '^(\s*)allow-query\s*{[^}]*};'
+        replace: '\1allow-query { any;};\n\1allow-transfer { {{ ip_esclavo }}; };' 
+        # En el servidor esclavo, allow-transfer no va a tener ningún efecto práctico
+        # Se hace por no complicar más el playbook
+
+    - name: Modificar recursion en named.conf.options
+      replace:
+        path: /etc/named.conf
+        regexp: '^(\s*)recursion\s+yes;'
+        replace: '\1recursion no;'
+
+    - name: Configurar named.rfc1912.zones en Maestro
+      blockinfile:
+        path: /etc/named.rfc1912.zones
+        block: |
+          zone "{{ zona_dns }}" {
+            type master;
+            file "/var/named/db.{{ zona_dns }}";
+            allow-transfer { {{ ip_esclavo }}; };
+          };
+      when: "'DNS_Maestro' in group_names"
+
+    - name: Configurar named.rfc1912.zones en Esclavo
+      blockinfile:
+        path: /etc/named.rfc1912.zones
+        block: |
+          zone "{{ zona_dns }}" {
+            type slave;
+            file "/var/named/slaves/db.{{ zona_dns }}";
+            masters { {{ ip_maestro }}; };
+          };
+      when: "'DNS_Esclavo' in group_names"
+
+    - name: Crear archivo de zona en el maestro
+      template:
+        src: templates/archivozona.j2
+        dest: "/var/named/db.{{ zona_dns }}"
+      when: "'DNS_Maestro' in group_names"
+
+    - name: Crear directorio de zona en el esclavo
+      file:
+        path: /var/named/slaves
+        state: directory
+        mode: '0755'
+      when: "'DNS_Esclavo' in group_names"
+
+    - name: Reiniciar servicio Bind
+      service:
+        name: named
+        state: restarted

@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Paloma PML</title>
+    </head>
+    <body>
+        <h1>Bienvenido a la página por defecto de {{ nombre_alumno }}</h1>
+        <p>Este es el host: {{ ansible_facts['hostname'] }}</p>
+        <p>Distribución del sistema operativo: {{ ansible_facts['distribution'] }}</p>
+        <p>Versión del sistema operativo: {{ ansible_facts['distribution_version'] }}</p>
+        <p>Procesador: {{ ansible_facts['processor'] }}</p>
+        <p>Memoria RAM total (MB): {{ ansible_facts['memory_mb']['real']['total'] }}</p>
+    </body>
+</html>

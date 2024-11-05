@@ -1,0 +1,16 @@
+$TTL 604800
+@ IN SOA ns1.{{ zona_dns }}. admin.{{ zona_dns }}. (
+        1         ; Serial
+        604800    ; Refresh
+        86400     ; Retry
+        2419200   ; Expire
+        604800 )  ; Negative Cache TTL
+;
+@     IN  NS    ns1.{{ zona_dns }}.
+@     IN  NS    ns2.{{ zona_dns }}.
+
+ns1   IN  A     {{ ip_maestro }}
+ns2   IN  A     {{ ip_esclavo }}
+
+@     IN  A     10.10.10.10 ;prueba.com
+www   IN  A     10.10.10.10	;www.prueba.com

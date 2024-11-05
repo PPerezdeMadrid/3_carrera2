@@ -1,0 +1,13 @@
+$TTL 86400
+@   IN  SOA ns1.{{ dominio }}. admin.{{ dominio }}. (
+            {{ serial }} ; Serial
+            3600       ; Refresh
+            1800       ; Retry
+            604800     ; Expire
+            86400 )    ; Minimum TTL
+
+@   IN  NS  ns1.{{ dominio }}.
+ns1 IN  A   {{ ansible_host }}
+
+@   IN  A   1.2.3.4
+www IN  CNAME @

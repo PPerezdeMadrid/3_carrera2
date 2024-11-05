@@ -1,0 +1,24 @@
+---
+apache_conf_dirs:
+  RedHat: /etc/httpd/conf
+  Debian: /etc/apache2/sites-enabled
+  Ubuntu: /etc/apache2/sites-enabled
+  Suse: /etc/apache2/vhosts.d
+
+apache_servicios:
+  RedHat: httpd
+  Debian: apache2
+  Ubuntu: apache2
+  Suse: apache2
+
+apache_conf_files:
+  RedHat: httpd.conf
+  Debian: apache2.conf
+  Ubuntu: apache2.conf
+  Suse: httpd.conf
+
+proyecto_dir_index:
+  RedHat: /var/www/html
+  Debian: /var/projects
+  Ubuntu: /var/projects
+  Suse: /srv/www/htdocs

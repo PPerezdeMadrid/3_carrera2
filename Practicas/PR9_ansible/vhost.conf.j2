@@ -1,0 +1,12 @@
+<VirtualHost *:80>
+
+    ServerName {{ dominio }}
+    DocumentRoot {{ proyecto_dir }}/{{ dominio }}
+
+    <Directory {{ proyecto_dir }}/{{ dominio }}>
+        Options Indexes FollowSymLinks
+        AllowOverride None
+        Require all granted
+    </Directory>
+
+</VirtualHost>
